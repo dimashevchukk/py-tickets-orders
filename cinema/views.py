@@ -33,21 +33,26 @@ class ParseParamsMixin:
 
 
 class GenreViewSet(viewsets.ModelViewSet):
+    pagination_class = None
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
 class ActorViewSet(viewsets.ModelViewSet):
+    pagination_class = None
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
 
 
 class CinemaHallViewSet(viewsets.ModelViewSet):
+    pagination_class = None
     queryset = CinemaHall.objects.all()
     serializer_class = CinemaHallSerializer
 
 
 class MovieViewSet(ParseParamsMixin, viewsets.ModelViewSet):
+    pagination_class = None
+
     def get_queryset(self):
         queryset = Movie.objects.all()
 
@@ -78,6 +83,8 @@ class MovieViewSet(ParseParamsMixin, viewsets.ModelViewSet):
 
 
 class MovieSessionViewSet(ParseParamsMixin, viewsets.ModelViewSet):
+    pagination_class = None
+
     def get_queryset(self):
         queryset = MovieSession.objects.all()
 
