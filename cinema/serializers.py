@@ -67,10 +67,8 @@ class MovieSessionListSerializer(MovieSessionSerializer):
     cinema_hall_name = serializers.SlugRelatedField(
         slug_field="name", source="cinema_hall", read_only=True
     )
-    cinema_hall_capacity = serializers.SlugRelatedField(
-        slug_field="capacity", source="cinema_hall", read_only=True
-    )
-    tickets_available = serializers.IntegerField(read_only=True)
+    cinema_hall_capacity = serializers.SerializerMethodField()
+    tickets_available = serializers.SerializerMethodField()
 
     class Meta:
         model = MovieSession
@@ -81,6 +79,19 @@ class MovieSessionListSerializer(MovieSessionSerializer):
             "cinema_hall_name",
             "cinema_hall_capacity",
             "tickets_available"
+        )
+
+    def get_cinema_hall_capacity(self, obj):
+        if hasattr(obj.cinema_hall, "capacity"):
+            return obj.cinema_hall.capacity
+
+    def get_tickets_available(self, obj):
+        if hasattr(obj, "tickets_available"):
+            return obj.tickets_available
+        return (
+            obj.cinema_hall.rows
+            * obj.cinema_hall.seats_in_row
+            - obj.tickets.count()
         )
 
 
@@ -109,7 +120,7 @@ class TicketSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         Ticket.validate_seat(
-            movie_session=["movie_session"],
+            movie_session=attrs["movie_session"],
             row=attrs["row"],
             seat=attrs["seat"],
             error_raise=serializers.ValidationError
@@ -130,7 +141,9 @@ class OrderSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         tickets_data = validated_data.pop("tickets")
-        order = Order.objects.create(**validated_data)
+        order = Order.objects.create(
+            user=self.context["request"].user
+        )
 
         for ticket_data in tickets_data:
             Ticket.objects.create(order=order, **ticket_data)
@@ -140,5 +153,5 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class OrderListSerializer(OrderSerializer):
     tickets = TicketListSerializer(
-        many=True, read_only=False, allow_empty=False
+        many=True, read_only=True
     )
